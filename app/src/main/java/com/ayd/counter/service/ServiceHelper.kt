@@ -6,8 +6,11 @@ import android.content.Intent
 import android.os.Build
 import androidx.compose.animation.ExperimentalAnimationApi
 import com.ayd.counter.MainActivity
+import com.ayd.counter.util.Constants.CANCEL_REQUEST_CODE
 import com.ayd.counter.util.Constants.CLICK_REQUEST_CODE
-import com.ayd.counter.util.Constants.STOPCOUNTER_STATE
+import com.ayd.counter.util.Constants.RESUME_REQUEST_CODE
+import com.ayd.counter.util.Constants.STOP_COUNTER_STATE
+import com.ayd.counter.util.Constants.STOP_REQUEST_CODE
 
 @ExperimentalAnimationApi
 object ServiceHelper {
@@ -17,7 +20,9 @@ object ServiceHelper {
         else 0
 
     fun clickPendingIntent(context: Context): PendingIntent{
-        val clickIntent = Intent(context,MainActivity::class.java)
+        val clickIntent = Intent(context,MainActivity::class.java).apply {
+            putExtra(STOP_COUNTER_STATE, StopCounterState.Started.name)
+        }
         return PendingIntent.getActivity(
             context,CLICK_REQUEST_CODE, clickIntent, flag
         )
@@ -25,9 +30,33 @@ object ServiceHelper {
 
     fun stopPendingIntent(context: Context): PendingIntent{
         val intentStop = Intent(context, StopCounterService::class.java).apply {
-            putExtra(STOPCOUNTER_STATE,StopCounterState.Stopped.name)
+            putExtra(STOP_COUNTER_STATE,StopCounterState.Stopped.name)
+        }
+        return PendingIntent.getService(context, STOP_REQUEST_CODE,intentStop, flag)
+    }
+
+    fun resumePendingIntent(context: Context): PendingIntent{
+        val resumeIntent = Intent(context, StopCounterService::class.java).apply {
+            putExtra(STOP_COUNTER_STATE, StopCounterState.Started.name)
+        }
+        return PendingIntent.getService(context, RESUME_REQUEST_CODE,resumeIntent,flag)
+    }
+
+
+    fun cancelPendingIntent(context: Context): PendingIntent{
+        val cancelIntent = Intent(context, StopCounterService::class.java).apply {
+            putExtra(STOP_COUNTER_STATE,StopCounterState.Canceled.name)
+        }
+        return PendingIntent.getService(context, CANCEL_REQUEST_CODE,cancelIntent,flag)
+    }
+
+    fun triggerForegroundService(context: Context, action: String){
+        Intent(context, StopCounterService::class.java).apply {
+            this.action = action
+            context.startService(this)
         }
     }
 
 
 }
+

@@ -9,16 +9,23 @@ import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Blue
-import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ayd.counter.service.ServiceHelper
+import com.ayd.counter.service.StopCounterService
+import com.ayd.counter.service.StopCounterState
+import com.ayd.counter.ui.theme.Blue
+import com.ayd.counter.ui.theme.Light
+import com.ayd.counter.ui.theme.Red
+import com.ayd.counter.util.Constants.ACTION_SERVICE_CANCEL
+import com.ayd.counter.util.Constants.ACTION_SERVICE_START
+import com.ayd.counter.util.Constants.ACTION_SERVICE_STOP
 
 @ExperimentalAnimationApi
 @Composable
@@ -107,7 +114,7 @@ fun MainScreen(stopCounterService: StopCounterService){
                     .fillMaxHeight(0.8f),
                 onClick = {
                     ServiceHelper.triggerForegroundService(
-                        context = context, action = ACTION_SERVICE_RESET
+                        context = context, action = ACTION_SERVICE_CANCEL
                     )
                 },
                 enabled = seconds != "00" && currentState != StopCounterState.Started,
@@ -124,9 +131,9 @@ fun MainScreen(stopCounterService: StopCounterService){
 
 @ExperimentalAnimationApi
 fun addAnim(duration: Int = 600): ContentTransform{
-    return slideInVertically(animationSpec = tween(durationMillis = duration)){height -> height}(
+    return slideInVertically(animationSpec = tween(durationMillis = duration)){height -> height}+ fadeIn(
     animationSpec = tween(durationMillis = duration)
-    ) with slideOutVertically(animationSpec = tween(durationMillis = duration)){height -> height}(
+    ) with slideOutVertically(animationSpec = tween(durationMillis = duration)){height -> height}+ fadeOut(
         animationSpec = tween(durationMillis = duration)
     )
 }

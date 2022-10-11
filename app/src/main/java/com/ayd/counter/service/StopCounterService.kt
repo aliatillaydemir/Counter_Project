@@ -1,5 +1,6 @@
 package com.ayd.counter.service
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
@@ -15,7 +16,7 @@ import com.ayd.counter.util.Constants.ACTION_SERVICE_STOP
 import com.ayd.counter.util.Constants.NOTIFICATION_CHANNEL_ID
 import com.ayd.counter.util.Constants.NOTIFICATION_CHANNEL_NAME
 import com.ayd.counter.util.Constants.NOTIFICATION_ID
-import com.ayd.counter.util.Constants.STOPCOUNTER_STATE
+import com.ayd.counter.util.Constants.STOP_COUNTER_STATE
 import com.ayd.counter.util.formatTime
 import com.ayd.counter.util.pad
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,7 +36,7 @@ class StopCounterService: Service(){
     @Inject
     lateinit var notificationBuilder: NotificationCompat.Builder
 
-    private val binder = StopCounterService()
+    private val binder = StopCounterBinder()
 
     private var duration: Duration = Duration.ZERO
     private lateinit var timer: Timer
@@ -53,7 +54,7 @@ class StopCounterService: Service(){
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
-        when (intent?.getStringExtra(STOPCOUNTER_STATE)) {
+        when (intent?.getStringExtra(STOP_COUNTER_STATE)) {
             StopCounterState.Started.name -> {
                 setStopButton()
                 startForegroundService()
@@ -67,7 +68,7 @@ class StopCounterService: Service(){
             setResumeButton()
             }
 
-            StopCounterState.Canceled.name -> {
+                StopCounterState.Canceled.name -> {
                 stopStopCounter()
                 cancelStopCounter()
                 stopForegroundService()
@@ -90,7 +91,7 @@ class StopCounterService: Service(){
                 }
                 ACTION_SERVICE_CANCEL -> {
                     stopStopCounter()
-                    cancelStopwatch()
+                    cancelStopCounter()
                     stopForegroundService()
                 }
             }
@@ -99,7 +100,7 @@ class StopCounterService: Service(){
             }
 
     private fun startStopCounter(onTick: (h: String, m: String, s: String) -> Unit) {
-        currentState.value = StopwatchState.Started
+        currentState.value = StopCounterState.Started
         timer = fixedRateTimer(initialDelay = 1000L, period = 1000L) {
             duration = duration.plus(1.seconds)
             updateTimeUnits()
@@ -111,12 +112,12 @@ class StopCounterService: Service(){
         if (this::timer.isInitialized) {
             timer.cancel()
         }
-        currentState.value = StopwatchState.Stopped
+        currentState.value = StopCounterState.Stopped
     }
 
-    private fun cancelStopwatch() {
+    private fun cancelStopCounter() {
         duration = Duration.ZERO
-        currentState.value = StopwatchState.Idle
+        currentState.value = StopCounterState.Idle
         updateTimeUnits()
     }
 
@@ -135,7 +136,9 @@ class StopCounterService: Service(){
 
     private fun stopForegroundService() {
         notificationManager.cancel(NOTIFICATION_ID)
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        }
         stopSelf()
     }
 
@@ -165,6 +168,7 @@ class StopCounterService: Service(){
         )
     }
 
+    @SuppressLint("RestrictedApi")
     private fun setStopButton() {
         notificationBuilder.mActions.removeAt(0)
         notificationBuilder.mActions.add(
@@ -178,6 +182,7 @@ class StopCounterService: Service(){
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
     }
 
+    @SuppressLint("RestrictedApi")
     private fun setResumeButton() {
         notificationBuilder.mActions.removeAt(0)
         notificationBuilder.mActions.add(
@@ -191,12 +196,12 @@ class StopCounterService: Service(){
         notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
     }
 
-    inner class StopwatchBinder : Binder() {
+    inner class StopCounterBinder : Binder() {
         fun getService(): StopCounterService = this@StopCounterService
     }
 }
 
-enum class StopwatchState {
+enum class StopCounterState {
     Idle,
     Started,
     Stopped,

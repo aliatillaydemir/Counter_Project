@@ -1,24 +1,22 @@
 package com.ayd.counter
 
+
+import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.ayd.counter.service.StopCounterService
 import com.ayd.counter.ui.theme.CounterTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -27,12 +25,12 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private var bound by mutableStateOf(false)
-    private lateinit var stopcounterService: StopCounterService
+    private lateinit var stopCounterService: StopCounterService
 
     private val connection = object: ServiceConnection{
         override fun onServiceConnected(p0: ComponentName?, p1: IBinder?) {
-            val binder = service as StopCounterService.StopCounterBinder
-            stopcounterService = binder.getService()
+            val binder = p1 as StopCounterService.StopCounterBinder
+            stopCounterService = binder.getService()
             bound = true
         }
 
@@ -45,7 +43,7 @@ class MainActivity : ComponentActivity() {
         super.onStart()
 
         Intent(this, StopCounterService::class.java).also {
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+            bindService(it, connection, Context.BIND_AUTO_CREATE)
         }
     }
 
@@ -55,10 +53,22 @@ class MainActivity : ComponentActivity() {
         setContent {
             CounterTheme {
                 if(bound){
-                    MainScreen(stopcounterService = stopcounterService)
+                    MainScreen(stopCounterService = stopCounterService)
                 }
             }
         }
+        requestPermissions(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    private fun requestPermissions(vararg permissions: String) {
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { result ->
+            result.entries.forEach {
+                Log.d("MainActivity", "${it.key} = ${it.value}")
+            }
+        }
+        requestPermissionLauncher.launch(permissions.asList().toTypedArray())
     }
 
     override fun onStop() {
